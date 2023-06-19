@@ -52,36 +52,36 @@ torch.manual_seed(manualSeed)
 print("Random Seed: ", manualSeed)
 
 
-devices = ["cuda:1", "cuda:2", "cuda:3"]
+devices = ["cuda:0","cuda:1", "cuda:2", "cuda:3"]
 
 # Training images
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'  
 
 #logger directory
-train_log_dir = 'DCGAN_experiments/logs/tensorboard/train_test'
+train_log_dir = 'DCGAN_experiments/logs/tensorboard/train_wsgp_2x'
 #checkpoint of saved models
-checkpoints_path = 'DCGAN_experiments/models/model_test/gan'
+checkpoints_path = 'DCGAN_experiments/models/model_wsgp_2x/gan'
 #path of generated images
-images_path  = 'DCGAN_experiments/images/images_test'
+images_path  = 'DCGAN_experiments/images/images_wsgp_2x'
 
 
 #Category of species to train
 species_category = 144
 
-batch_size = 4
+batch_size = 32
 
 #Number of generated images at each training epoch
 generated_samples = 4  
 
-epochs = 500
+epochs = 2500
 
 trainer = None 
 
 
 ####################################
 ###  dcgan_network, aee_network  ###
-network = dcgan_network
+network = dcgan_network_2x
 
 ###########################################################
 ## DCGAN: minimax_losses, wgangp_losses, lsgan_losses, 
@@ -93,7 +93,7 @@ if torch.cuda.device_count() > 1:
     # Use deterministic cudnn algorithms
     torch.backends.cudnn.deterministic = True
     trainer = ParallelTrainer(
-    network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path)
+    network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints = 1)
 else :
     device = torch.device(devices[0] if torch.cuda.is_available() else "cpu")    
     if torch.cuda.is_available():

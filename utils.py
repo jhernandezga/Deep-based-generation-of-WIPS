@@ -32,10 +32,11 @@ def custom_collate(batch):
     for sample in batch:
         image = sample['image']
         pil_image = to_pil_image(image)  # Convert to PIL image
-        #resized_image = transforms.Resize((232, 512))(pil_image)
-        resized_image = transforms.Resize((116, 256))(pil_image)
-        #padded_image = transforms.Pad((0,0,0,280))(resized_image)
-        padded_image = transforms.Pad((0,0,0,140))(resized_image)
+        resized_image = transforms.Resize((232, 512))(pil_image)
+        #resized_image = transforms.Resize((116, 256))(pil_image)
+        padded_image = transforms.Pad((0,0,0,280))(resized_image)
+        #padded_image = transforms.Pad((0,0,0,24))(resized_image)
+        #padded_image = transforms.Pad((0,0,0,140))(resized_image)
         resized_tensor = transforms.ToTensor()(padded_image)  # Convert back to tensor
         resized_batch.append(resized_tensor)
         categories.append(torch.tensor(sample['category']))

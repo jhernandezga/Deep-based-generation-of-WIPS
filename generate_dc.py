@@ -39,33 +39,22 @@ from torchgan.trainer import Trainer
 #from torchgan.logging import Logger
 
 from Resources.wips_dataset import wipsDataset
-
-# Set random seed for reproducibility
-#manualSeed = 999
-#random.seed(manualSeed)
-#torch.manual_seed(manualSeed)
-#print("Random Seed: ", manualSeed)
+from models_param import *
+from skimage.io import imsave
 
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.get_device_name(device))
 
-images_root = 'Resources/Images'
-images_reference = 'Resources/wips_reference.csv' 
+ 
 load_path  = 'model_test4/gan4.model'
+saving_path = 'Generated_images/DCGAN_wsgp'
 
 
 params = torch.load(load_path)
-params_net =  {
-        "name": DCGANGenerator,
-        "args": {
-            "out_size":256,
-            "encoding_dims": 100,
-            "out_channels": 3,
-            "step_channels": 32,
-            "batchnorm": True,
-            "nonlinearity": nn.LeakyReLU(0.2),
-            "last_nonlinearity": nn.Tanh(),
-        }}
+params_net = dcgan_network["generator"]
+
+test = False
+samples = 20
 
 print('Epoch: ',params['epoch'])
 
@@ -73,21 +62,27 @@ print('Epoch: ',params['epoch'])
 netGen = DCGANGenerator(**params_net['args']).to(device)
 netGen.load_state_dict(params['generator'])
 netGen.eval()
-#for param_tensor in netGen.state_dict():
-#    print(param_tensor, "\t", netGen.state_dict()[param_tensor].size())
 
-#print(netGen)
+if test:
+    z = torch.randn(1,100,1,1, device=device)
+    with torch.no_grad():
+        z = z.to(next(netGen.parameters()).device)
+        generated_img = netGen(z).detach().cpu()
+        generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
+        plt.axis("off")
+        plt.title("Generated Images")
+        plt.imshow(np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0)))
+        plt.show(block = True)
 
-noise = torch.randn(1,100,1,1, device=device)
-print(noise.size())
 
-with torch.no_grad():
-	# Get generated image from the noise vector using
-	# the trained generator.
-    generated_img = netGen(noise).detach().cpu()
-
-plt.axis("off")
-plt.title("Generated Images")
-plt.imshow(np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0)))
-
-plt.show(block = True)
+else:
+    for i in range(samples):
+        z = torch.randn(1,100,1,1, device=device)
+        with torch.no_grad():
+            # Get generated image from the noise vector using
+            # the trained generator.
+            z = z.to(next(netGen.parameters()).device)
+            generated_img = netGen(z).detach().cpu()
+            generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
+            generated_img = np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0))
+            imsave("{}/{}.jpg".format(saving_path,i), generated_img)

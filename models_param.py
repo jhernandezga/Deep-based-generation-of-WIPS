@@ -67,6 +67,34 @@ dcgan_network = {
     },
 }
 
+dcgan_network_2x = {
+    "generator": {
+        "name": DCGANGenerator,
+        "args": {
+            "out_size":512,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "batchnorm": True,
+            "nonlinearity": nn.LeakyReLU(0.2),
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": DCGANDiscriminator,
+        "args": {
+            "in_size":512,
+            "in_channels": 3,
+            "step_channels": 64,
+            "batchnorm": True,
+            "nonlinearity": nn.LeakyReLU(0.2),
+            "last_nonlinearity": nn.LeakyReLU(0.2)
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
+
 
 minimax_losses = [MinimaxGeneratorLoss(), MinimaxDiscriminatorLoss()]
 wgangp_losses = [
@@ -75,6 +103,8 @@ wgangp_losses = [
     WassersteinGradientPenalty(),
 ]
 lsgan_losses = [LeastSquaresGeneratorLoss(), LeastSquaresDiscriminatorLoss()]
+
+
 
 
 

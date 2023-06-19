@@ -29,6 +29,7 @@ import torch.nn as nn
 import torchgan.models as models
 from aeegan_wassertein import AdversarialAutoencoderGenerator, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WassersteinGradientPenaltyMod
 from vgg_loss import VGGLoss
+import torchvision.transforms as transforms
 
 from collections import OrderedDict
 from models_set import *
@@ -36,16 +37,20 @@ from models_param import *
 #devices = ["cuda:1", "cuda:2", "cuda:3"] 
 #print(torch.cuda.get_device_name(device))
 
+from skimage.io import imsave, imread
+
 
 load_path  = 'AEE_experiments/models/model_ws2/gan4.model'
 params = torch.load(load_path, map_location='cpu')
+saving_path = 'Generated_images/AEE_ws_MSE'
+
+test = False
+samples = 20
 
 print('Epoch: ',params['epoch'])
 
 print(params.keys())
 state_dict = params['generator']
-
-print(state_dict.keys())
 
 devices = ["cuda:1", "cuda:2", "cuda:3"] 
 
@@ -73,9 +78,6 @@ for key, value in state_dict.items():
             new_state_dict[new_key] = value
             break
 
-
-print(new_state_dict.keys())
-
 params_net = aee_network['generator']
 
 netGen = AdversarialAutoencoderGenerator(**params_net['args'])
@@ -85,17 +87,26 @@ netGen.eval()
 
 #print(netGen)
 
-z = torch.randn(1,256) 
+if test:
+    z = torch.randn(1,256)
+    with torch.no_grad():
+        z = z.to(next(netGen.parameters()).device)
+        generated_img = netGen(z).detach().cpu()
+        generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
+        plt.axis("off")
+        plt.title("Generated Images")
+        plt.imshow(np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0)))
+        plt.show(block = True)
 
-with torch.no_grad():
-	# Get generated image from the noise vector using
-	# the trained generator.
-    z = z.to(next(netGen.parameters()).device)
-    print(next(netGen.parameters()).device)
-    generated_img = netGen(z).detach().cpu()
 
-plt.axis("off")
-plt.title("Generated Images")
-plt.imshow(np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0)))
-
-plt.show(block = True)
+else:
+    for i in range(samples):
+        z = torch.randn(1,256)
+        with torch.no_grad():
+            # Get generated image from the noise vector using
+            # the trained generator.
+            z = z.to(next(netGen.parameters()).device)
+            generated_img = netGen(z).detach().cpu()
+            generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
+            generated_img = np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0))
+            imsave("{}/{}.jpg".format(saving_path,i), generated_img)
