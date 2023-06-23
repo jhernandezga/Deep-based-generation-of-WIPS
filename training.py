@@ -52,36 +52,39 @@ torch.manual_seed(manualSeed)
 print("Random Seed: ", manualSeed)
 
 
-devices = ["cuda:0","cuda:1", "cuda:2", "cuda:3"]
+devices = ["cuda:0","cuda:1", "cuda:2"]
 
 # Training images
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'  
 
 #logger directory
-train_log_dir = 'DCGAN_experiments/logs/tensorboard/train_wsgp_2x'
+train_log_dir = 'DCGAN_experiments/logs/tensorboard/train_wsgp_s13'
 #checkpoint of saved models
-checkpoints_path = 'DCGAN_experiments/models/model_wsgp_2x/gan'
+checkpoints_path = 'DCGAN_experiments/images/images_wsgp_s13'
 #path of generated images
-images_path  = 'DCGAN_experiments/images/images_wsgp_2x'
+images_path  = 'DCGAN_experiments/logs/tensorboard/images_wsgp_s13'
 
+#Checkpoint load path
+
+load_path = 'DCGAN_experiments/models/model_wsgp_2x_3/gan1.model'
 
 #Category of species to train
-species_category = 144
+species_category = 13
 
 batch_size = 32
 
 #Number of generated images at each training epoch
 generated_samples = 4  
 
-epochs = 2500
+epochs = 1000
 
 trainer = None 
 
 
 ####################################
-###  dcgan_network, aee_network  ###
-network = dcgan_network_2x
+###  dcgan_network, aee_network , dcgan_network_2x, began_network ###
+network = dcgan_network
 
 ###########################################################
 ## DCGAN: minimax_losses, wgangp_losses, lsgan_losses, 
@@ -93,7 +96,7 @@ if torch.cuda.device_count() > 1:
     # Use deterministic cudnn algorithms
     torch.backends.cudnn.deterministic = True
     trainer = ParallelTrainer(
-    network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints = 1)
+    network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints = 3)
 else :
     device = torch.device(devices[0] if torch.cuda.is_available() else "cpu")    
     if torch.cuda.is_available():
@@ -107,6 +110,8 @@ print("CUDA available: ",torch.cuda.is_available())
 print("Epochs: {}".format(epochs))
 
 train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size)
+
+#trainer.load_model(load_path=load_path)
 
 trainer(train_dataloader)
 

@@ -34,8 +34,13 @@ from torchvision.transforms.functional import to_pil_image
 # Torchgan Imports
 from torchgan.models import DCGANGenerator
 from torchgan.models import DCGANDiscriminator
+from torchgan.models import AutoEncodingDiscriminator
+
 from torchgan.losses import *
-from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss
+from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, EncoderGeneratorBEGAN, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss
+
+
+
 
 ######################################  DCGAN   #######################################
 
@@ -67,6 +72,9 @@ dcgan_network = {
     },
 }
 
+
+#"step_channels": 64
+
 dcgan_network_2x = {
     "generator": {
         "name": DCGANGenerator,
@@ -74,7 +82,7 @@ dcgan_network_2x = {
             "out_size":512,
             "encoding_dims": 100,
             "out_channels": 3,
-            "step_channels": 32,
+            "step_channels": 64,
             "batchnorm": True,
             "nonlinearity": nn.LeakyReLU(0.2),
             "last_nonlinearity": nn.Tanh(),
@@ -123,7 +131,6 @@ aee_network = {
     },
 }   
 
-
 wassertein_losses = [
     WasserteinAutoencoderGeneratorLoss(),
     WasserteinAutoencoderDiscriminatorLoss(),
@@ -136,7 +143,6 @@ perceptual_losses = [
     AdversarialAutoencoderDiscriminatorLoss(),
 ]
 
-
 #### VGG + L1 + wassertein 
 wassL1_losses = [
     WasserteinL1AutoencoderGeneratorLoss(),
@@ -145,3 +151,33 @@ wassL1_losses = [
 ]
 
 
+############################################################### BEGAN ######################################################################
+
+began_network = {
+    "generator": {
+        "name": EncoderGeneratorBEGAN,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "scale_factor": 2,
+            "batchnorm": True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": AutoEncodingDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            "scale_factor": 2,
+            "batchnorm": True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+}
+
+began_loss = [BoundaryEquilibriumGeneratorLoss(),
+            BoundaryEquilibriumDiscriminatorLoss(gamma= 0.5)]

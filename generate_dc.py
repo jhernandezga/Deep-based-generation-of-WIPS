@@ -47,7 +47,7 @@ print(torch.cuda.get_device_name(device))
 
  
 load_path  = 'model_test4/gan4.model'
-saving_path = 'Generated_images/DCGAN_wsgp'
+saving_path = 'Generated_images/DCGAN_wsgp/3'
 
 
 params = torch.load(load_path)

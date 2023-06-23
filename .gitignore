@@ -21,6 +21,7 @@ Extra/MarksData.xlsx
 Minimax_experiments/
 model_test4/
 Generated_images/
+BEGAN_experiments/
 
 .vscode/
 .conda/

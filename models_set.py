@@ -48,6 +48,8 @@ from torchgan.losses.functional import (
 from vgg_perceptual_loss import VGGPerceptualLoss
 from vgg_loss import VGGLoss
 
+from math import ceil, log
+
 devices = ["cuda:1", "cuda:2", "cuda:3"]
 
 
@@ -360,3 +362,115 @@ class AdversarialAutoencoderGeneratorLoss(GeneratorLoss):
         loss.backward()
         optimizer_generator.step()
         return loss.item()
+    
+
+
+##############  AUTOENCODER BEGAN #############
+class EncoderGeneratorBEGAN(models.Generator):
+    def __init__(
+        self,
+        encoding_dims=100,
+        out_size=32,
+        out_channels=3,
+        step_channels=64,
+        scale_factor=2,
+        batchnorm=True,
+        nonlinearity=None,
+        last_nonlinearity=None,
+        label_type="none",
+    ):
+        super(EncoderGeneratorBEGAN, self).__init__(encoding_dims, label_type)
+        if out_size < (scale_factor ** 4) or ceil(log(out_size, scale_factor)) != log(
+            out_size, scale_factor
+        ):
+            raise Exception(
+                "Target image size must be at least {} and a perfect power of {}".format(
+                    scale_factor ** 4, scale_factor
+                )
+            )
+        num_repeats = int(log(out_size, scale_factor)) - 3
+        same_filters = scale_factor + 1
+        same_pad = scale_factor // 2
+        if scale_factor == 2:
+            upsample_filters = 3
+            upsample_stride = 2
+            upsample_pad = 1
+            upsample_output_pad = 1
+        else:
+            upsample_filters = scale_factor
+            upsample_stride = scale_factor
+            upsample_pad = 0
+            upsample_output_pad = 0
+        self.ch = out_channels
+        self.n = step_channels
+        use_bias = not batchnorm
+        nl = nn.ELU() if nonlinearity is None else nonlinearity
+        last_nl = nn.Tanh() if last_nonlinearity is None else last_nonlinearity
+        init_dim = scale_factor ** 3
+        self.init_dim = init_dim
+
+        if batchnorm is True:
+            self.fc = nn.Sequential(
+                nn.Linear(self.encoding_dims, (init_dim ** 2) * self.n),
+                nn.BatchNorm1d((init_dim ** 2) * self.n),
+            )
+            initial_unit = nn.Sequential(
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nn.BatchNorm2d(self.n),
+                nl,
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nn.BatchNorm2d(self.n),
+                nl,
+            )
+            upsample_unit = nn.Sequential(
+                nn.Upsample(scale_factor=2, mode='nearest'),
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nn.BatchNorm2d(self.n),
+                nl,
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nn.BatchNorm2d(self.n),
+                nl,
+            )
+            
+        else:
+            self.fc = nn.Sequential(
+                nn.Linear(self.encoding_dims, (init_dim ** 2) * self.n)
+            )
+            initial_unit = nn.Sequential(
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nl,
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nl,
+            )
+            upsample_unit = nn.Sequential(
+                nn.Upsample(scale_factor=2, mode='nearest'),
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nl,
+                nn.Conv2d(self.n, self.n, same_filters, 1, same_pad, bias=use_bias),
+                nl,
+            )
+
+        last_unit = nn.Sequential(
+            nn.Conv2d(self.n, self.ch, same_filters, 1, same_pad, bias=True), last_nl
+        )
+        model = [initial_unit]
+        for i in range(num_repeats):
+            model.append(upsample_unit)
+            out_size = out_size // scale_factor
+        model.append(last_unit)
+        self.model = nn.Sequential(*model)
+        self._weight_initializer()
+    
+    def forward(self, z):
+        r"""Calculates the output tensor on passing the encoding ``z`` through the Generator.
+
+        Args:
+            z (torch.Tensor): A 2D torch tensor of the encoding sampled from a probability
+                distribution.
+
+        Returns:
+            A 4D torch.Tensor of the generated image.
+        """
+        x = self.fc(z)
+        x = x.view(-1, self.n, self.init_dim, self.init_dim)
+        return self.model(x)
