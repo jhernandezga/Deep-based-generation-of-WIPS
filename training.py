@@ -58,6 +58,16 @@ devices = ["cuda:0","cuda:1", "cuda:2"]
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'  
 
+
+images_network = 'DCGAN_experiments/logs/tensorboard/training_network'
+
+
+for i in range(len(devices)):
+    torch.cuda.device_count(devices[i])
+    torch.cuda.device()
+    torch.cuda.get_device_properties(devices[i])
+    
+    
 #logger directory
 train_log_dir = 'DCGAN_experiments/logs/tensorboard/train_wsgp_s13'
 #checkpoint of saved models
