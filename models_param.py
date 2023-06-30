@@ -37,7 +37,7 @@ from torchgan.models import DCGANDiscriminator
 from torchgan.models import AutoEncodingDiscriminator
 
 from torchgan.losses import *
-from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, EncoderGeneratorBEGAN, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss
+from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, EncoderGeneratorBEGAN, ResNetDiscriminator, ResNetGenerator, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss
 
 
 
@@ -82,6 +82,35 @@ dcgan_network_2x = {
             "out_size":512,
             "encoding_dims": 100,
             "out_channels": 3,
+            "step_channels": 32,
+            "batchnorm": True,
+            "nonlinearity": nn.LeakyReLU(0.2),
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": DCGANDiscriminator,
+        "args": {
+            "in_size":512,
+            "in_channels": 3,
+            "step_channels": 64,
+            "batchnorm": True,
+            "nonlinearity": nn.LeakyReLU(0.2),
+            "last_nonlinearity": nn.LeakyReLU(0.2)
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
+
+
+dcgan_network_2x_2 = {
+    "generator": {
+        "name": DCGANGenerator,
+        "args": {
+            "out_size":512,
+            "encoding_dims": 100,
+            "out_channels": 3,
             "step_channels": 64,
             "batchnorm": True,
             "nonlinearity": nn.LeakyReLU(0.2),
@@ -102,6 +131,33 @@ dcgan_network_2x = {
         "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
     },
 }
+
+
+resnet_network = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
+
+
+
 
 
 minimax_losses = [MinimaxGeneratorLoss(), MinimaxDiscriminatorLoss()]

@@ -52,7 +52,7 @@ torch.manual_seed(manualSeed)
 print("Random Seed: ", manualSeed)
 
 
-devices = ["cuda:0","cuda:1", "cuda:2"]
+devices = ["cuda:0","cuda:1", "cuda:2", "cuda:3"]
 
 # Training images
 images_root = 'Resources/Images'
@@ -61,23 +61,16 @@ images_reference = 'Resources/wips_reference.csv'
 
 images_network = 'DCGAN_experiments/logs/tensorboard/training_network'
 
-
-for i in range(len(devices)):
-    torch.cuda.device_count(devices[i])
-    torch.cuda.device()
-    torch.cuda.get_device_properties(devices[i])
-    
-    
 #logger directory
-train_log_dir = 'DCGAN_experiments/logs/tensorboard/train_wsgp_s13'
+train_log_dir = 'ResNetExperiments/logs/train_res3'
 #checkpoint of saved models
-checkpoints_path = 'DCGAN_experiments/images/images_wsgp_s13'
+checkpoints_path = 'ResNetExperiments/models/model_res3/gan'
 #path of generated images
-images_path  = 'DCGAN_experiments/logs/tensorboard/images_wsgp_s13'
+images_path  = 'ResNetExperiments/images/images_res3'
 
 #Checkpoint load path
 
-load_path = 'DCGAN_experiments/models/model_wsgp_2x_3/gan1.model'
+load_path = 'ResNetExperiments/models/model_res2/model_res22.model'
 
 #Category of species to train
 species_category = 13
@@ -94,7 +87,7 @@ trainer = None
 
 ####################################
 ###  dcgan_network, aee_network , dcgan_network_2x, began_network ###
-network = dcgan_network
+network = resnet_network
 
 ###########################################################
 ## DCGAN: minimax_losses, wgangp_losses, lsgan_losses, 
@@ -121,7 +114,6 @@ print("Epochs: {}".format(epochs))
 
 train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size)
 
-#trainer.load_model(load_path=load_path)
+trainer.load_model(load_path=load_path)
 
 trainer(train_dataloader)
-

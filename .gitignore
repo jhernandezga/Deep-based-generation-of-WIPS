@@ -22,6 +22,7 @@ Minimax_experiments/
 model_test4/
 Generated_images/
 BEGAN_experiments/
+ResNetExperiments/
 
 .vscode/
 .conda/

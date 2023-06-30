@@ -474,3 +474,159 @@ class EncoderGeneratorBEGAN(models.Generator):
         x = self.fc(z)
         x = x.view(-1, self.n, self.init_dim, self.init_dim)
         return self.model(x)
+    
+    
+    
+################################### WGANGP -ResNet #########################################
+
+class ResidualBlock(nn.Module):
+    def __init__(self,input_dim, output_dim, resample ,kernel_size = 3, size = 256):
+        super(ResidualBlock, self).__init__()
+        if resample == 'up':
+            self.shortcut = nn.Sequential(
+                nn.UpsamplingNearest2d(scale_factor = 2),
+                nn.Conv2d(in_channels= input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same')  
+            )
+            self.output = nn.Sequential(
+                nn.BatchNorm2d(input_dim),
+                nn.ReLU(),
+                nn.UpsamplingNearest2d(scale_factor = 2),
+                nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same'),
+                nn.BatchNorm2d(output_dim),
+                nn.ReLU(),
+                nn.Conv2d(in_channels = output_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same'),
+                )
+                
+        elif resample == 'down':
+            
+            self.shortcut = nn.Sequential(
+                nn.AvgPool2d(kernel_size = 2),
+                nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = 1, padding = 'same'),
+                nn.ReLU()
+            )
+            self.output = nn.Sequential(
+                nn.LayerNorm(normalized_shape = [input_dim, size, size]),
+                nn.ReLU(),
+                nn.Conv2d(in_channels = input_dim, out_channels = input_dim, kernel_size = kernel_size, padding = 'same'),
+                nn.ReLU(),
+                nn.LayerNorm(normalized_shape = [input_dim, size, size]),
+                nn.ReLU(),
+                nn.AvgPool2d(kernel_size = 2),
+                nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same'),         
+            )
+            
+        else:
+            raise Exception('invalid resample value')
+
+
+    def forward(self, x):
+        identity = self.shortcut(x)
+        residual = self.output(x)
+        out = identity + residual
+        return out
+    
+
+class ResNetGenerator(models.Generator):
+    def __init__(
+        self,
+        encoding_dims=100,
+        out_size=256,
+        out_channels=3,
+        step_channels=64,
+        scale_factor=2,
+        nonlinearity=None,
+        last_nonlinearity=None,
+        label_type="none",
+    ):
+        super(ResNetGenerator, self).__init__(encoding_dims, label_type)
+        
+        num_repeats = out_size.bit_length() - 4
+        self.n = step_channels
+        last_nl = nn.Tanh() if last_nonlinearity is None else last_nonlinearity
+        
+        d = int(self.n * (2 ** num_repeats))
+        
+        self.init_channels = int(self.n * (2 ** num_repeats))
+        
+        model = []
+        
+        self.linear = nn.Linear(encoding_dims, 4*4*d) 
+        
+        for i in range(num_repeats):
+            model.append(
+              ResidualBlock(d,d//2, resample = 'up')          
+            )
+            d = d//2
+        
+        model.append(
+            ResidualBlock(d,d//2, resample = 'up')
+        )
+        d = d//2
+        
+        model.append(
+           nn.Sequential( nn.BatchNorm2d(d),
+            nn.ReLU(),
+            nn.Conv2d(in_channels = d, out_channels = out_channels, kernel_size = 3, padding = 'same'),
+            last_nl )       
+        )
+        
+        self.model = nn.Sequential(*model)
+    
+    def forward(self, x):
+        x = self.linear(x)
+        x = x.view(-1,self.init_channels,4,4)
+        return self.model(x)
+
+
+
+
+
+class ResNetDiscriminator(models.Discriminator):
+    def __init__(
+        self,
+        in_size = 256 ,
+        in_channels=3,
+        step_channels=64,
+        kernel_size = 3,
+        nonlinearity=None,
+        last_nonlinearity=None,
+        label_type="none",
+    ):
+        super(ResNetDiscriminator, self).__init__(in_channels, label_type)
+        
+        num_repeats = in_size.bit_length() - 4
+        self.n = step_channels
+        size = in_size
+        d = self.n
+        model = []
+        
+        model.append(
+            nn.Sequential(
+                nn.Conv2d(in_channels = in_channels, out_channels = d, kernel_size = kernel_size, padding = 'same')
+            )
+        )
+        
+        for i in range(num_repeats):
+            model.append(
+                nn.Sequential(
+                    nn.Sequential(
+                        ResidualBlock(input_dim = d, output_dim = d*2, resample = 'down', size = size)
+                    )
+                ) 
+            )
+            d *= 2
+            size = size//2
+    
+        model.append(
+            nn.Sequential(
+                nn.ReLU(),
+                nn.Flatten(),
+                nn.Linear(in_features = int(d*size**2), out_features = 1)
+            )
+        )
+        
+        self.model = nn.Sequential(*model)
+        
+    def forward(self, x):
+        return self.model(x)
+        

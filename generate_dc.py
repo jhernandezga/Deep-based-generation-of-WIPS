@@ -42,25 +42,44 @@ from Resources.wips_dataset import wipsDataset
 from models_param import *
 from skimage.io import imsave
 
+from collections import OrderedDict
+
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.get_device_name(device))
-
+devices = ["cuda:1", "cuda:2", "cuda:3"] 
  
-load_path  = 'model_test4/gan4.model'
-saving_path = 'Generated_images/DCGAN_wsgp/3'
+load_path  = 'DCGAN_experiments/images/images_wsgp_s131.model'
+saving_path = 'Generated_images/DCGAN_wsgp_s13'
 
 
 params = torch.load(load_path)
 params_net = dcgan_network["generator"]
+
+state_dict = params['generator']
 
 test = False
 samples = 20
 
 print('Epoch: ',params['epoch'])
 
+state_dict_mapping = {
+    'model.module.': 'module.model.',
+}
+
+new_state_dict = OrderedDict()
+
+for key, value in state_dict.items():
+    for old_prefix, new_prefix in state_dict_mapping.items():
+        if key.startswith(old_prefix):
+            new_key = key.replace(old_prefix, new_prefix)
+            new_state_dict[new_key] = value
+            break
+
+
 #print(params['generator'])
 netGen = DCGANGenerator(**params_net['args']).to(device)
-netGen.load_state_dict(params['generator'])
+netGen = torch.nn.DataParallel(netGen, devices).to(devices[0])
+netGen.load_state_dict(new_state_dict)
 netGen.eval()
 
 if test:
