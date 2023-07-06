@@ -48,8 +48,8 @@ device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.get_device_name(device))
 devices = ["cuda:1", "cuda:2", "cuda:3"] 
  
-load_path  = 'DCGAN_experiments/images/images_wsgp_s131.model'
-saving_path = 'Generated_images/DCGAN_wsgp_s13'
+load_path  = 'ResNetExperiments/models/model_res2/model_res22.model'
+saving_path = 'Generated_images/ResNet_wsgp1'
 
 
 params = torch.load(load_path)
@@ -105,3 +105,5 @@ else:
             generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
             generated_img = np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0))
             imsave("{}/{}.jpg".format(saving_path,i), generated_img)
+            
+            

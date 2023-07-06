@@ -25,7 +25,8 @@ import torch.nn as nn
 import torchvision
 from torch.optim import Adam
 import torch.nn as nn
-
+#from torch.nn.utils import spectral_norm
+from torch.nn.utils.parametrizations import spectral_norm
 
 import torch.nn.functional as F
 import torchvision
@@ -480,12 +481,13 @@ class EncoderGeneratorBEGAN(models.Generator):
 ################################### WGANGP -ResNet #########################################
 
 class ResidualBlock(nn.Module):
-    def __init__(self,input_dim, output_dim, resample ,kernel_size = 3, size = 256):
+    def __init__(self,input_dim, output_dim, resample ,kernel_size = 3, size = 256, spectral_normalization = False):
         super(ResidualBlock, self).__init__()
         if resample == 'up':
             self.shortcut = nn.Sequential(
                 nn.UpsamplingNearest2d(scale_factor = 2),
-                nn.Conv2d(in_channels= input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same')  
+                #nn.Conv2d(in_channels= input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same')
+                nn.Conv2d(in_channels= input_dim, out_channels = output_dim, kernel_size = 1, padding = 'same')  
             )
             self.output = nn.Sequential(
                 nn.BatchNorm2d(input_dim),
@@ -499,21 +501,37 @@ class ResidualBlock(nn.Module):
                 
         elif resample == 'down':
             
-            self.shortcut = nn.Sequential(
-                nn.AvgPool2d(kernel_size = 2),
-                nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = 1, padding = 'same'),
-                nn.ReLU()
-            )
-            self.output = nn.Sequential(
-                nn.LayerNorm(normalized_shape = [input_dim, size, size]),
-                nn.ReLU(),
-                nn.Conv2d(in_channels = input_dim, out_channels = input_dim, kernel_size = kernel_size, padding = 'same'),
-                nn.ReLU(),
-                nn.LayerNorm(normalized_shape = [input_dim, size, size]),
-                nn.ReLU(),
-                nn.AvgPool2d(kernel_size = 2),
-                nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same'),         
-            )
+            if spectral_normalization:
+                
+                self.shortcut = nn.Sequential(
+                    nn.AvgPool2d(kernel_size = 2),
+                    spectral_norm(nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = 1, padding = 'same')),
+                    nn.ReLU()
+                )
+                self.output = nn.Sequential(
+                    spectral_norm(nn.Conv2d(in_channels = input_dim, out_channels = input_dim, kernel_size = kernel_size, padding = 'same')),
+                    nn.ReLU(),
+                    nn.AvgPool2d(kernel_size = 2),
+                    spectral_norm(nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same')),         
+                )    
+            
+            else:
+            
+                self.shortcut = nn.Sequential(
+                    nn.AvgPool2d(kernel_size = 2),
+                    nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = 1, padding = 'same'),
+                    nn.ReLU()
+                )
+                self.output = nn.Sequential(
+                    nn.LayerNorm(normalized_shape = [input_dim, size, size]),
+                    nn.ReLU(),
+                    nn.Conv2d(in_channels = input_dim, out_channels = input_dim, kernel_size = kernel_size, padding = 'same'),
+                    nn.ReLU(),
+                    nn.LayerNorm(normalized_shape = [input_dim, size, size]),
+                    nn.ReLU(),
+                    nn.AvgPool2d(kernel_size = 2),
+                    nn.Conv2d(in_channels = input_dim, out_channels = output_dim, kernel_size = kernel_size, padding = 'same'),         
+                )
             
         else:
             raise Exception('invalid resample value')
@@ -591,6 +609,7 @@ class ResNetDiscriminator(models.Discriminator):
         nonlinearity=None,
         last_nonlinearity=None,
         label_type="none",
+        spectral_normalization = False
     ):
         super(ResNetDiscriminator, self).__init__(in_channels, label_type)
         
@@ -602,7 +621,7 @@ class ResNetDiscriminator(models.Discriminator):
         
         model.append(
             nn.Sequential(
-                nn.Conv2d(in_channels = in_channels, out_channels = d, kernel_size = kernel_size, padding = 'same')
+                spectral_norm(nn.Conv2d(in_channels = in_channels, out_channels = d, kernel_size = kernel_size, padding = 'same')) if spectral_normalization else nn.Conv2d(in_channels = in_channels, out_channels = d, kernel_size = kernel_size, padding = 'same')
             )
         )
         
@@ -610,7 +629,7 @@ class ResNetDiscriminator(models.Discriminator):
             model.append(
                 nn.Sequential(
                     nn.Sequential(
-                        ResidualBlock(input_dim = d, output_dim = d*2, resample = 'down', size = size)
+                        ResidualBlock(input_dim = d, output_dim = d*2, resample = 'down', size = size, spectral_normalization = spectral_normalization)
                     )
                 ) 
             )
@@ -621,7 +640,7 @@ class ResNetDiscriminator(models.Discriminator):
             nn.Sequential(
                 nn.ReLU(),
                 nn.Flatten(),
-                nn.Linear(in_features = int(d*size**2), out_features = 1)
+                spectral_norm(nn.Linear(in_features = int(d*size**2), out_features = 1)) if spectral_normalization else nn.Linear(in_features = int(d*size**2), out_features = 1)
             )
         )
         

@@ -156,6 +156,53 @@ resnet_network = {
     },
 }
 
+resnet_network_2x = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":512,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminator,
+        "args": {
+            "in_size":512,
+            "in_channels": 3,
+            "step_channels": 32,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
+
+
+resnet_network_sn = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            'spectral_normalization': True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
 
 
 

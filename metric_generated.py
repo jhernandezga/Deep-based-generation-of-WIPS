@@ -4,6 +4,7 @@ import torch.nn as nn
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 import torch.utils.data as data
 import torchvision.datasets as dsets
@@ -18,6 +19,7 @@ from skimage import metrics, io
 from skimage import transform as tf
 from skimage.io import imsave, imread
 
+from torchmetrics.image.fid import FrechetInceptionDistance
 
 from utils import *
 
@@ -26,7 +28,7 @@ images_reference = 'Resources/wips_reference.csv'
 
 samples = 20
 
-root_generated = 'Generated_images/AEE_MSE'
+root_generated = 'Generated_images/ResNet_wsgp_s144'
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'
 
@@ -35,7 +37,7 @@ species_category = 144
 dataset = get_dataset(images_root, images_reference,category=species_category)
 n = len(dataset)
 original_sample = (dataset[random.randint(n)])['image']
-resized_image = tf.resize(original_sample, (116,256), anti_aliasing= True) 
+resized_image = tf.resize(original_sample, (116,256), anti_aliasing= True, preserve_range=True) 
 
 plt.imshow(resized_image)
 plt.show()
@@ -49,11 +51,18 @@ plt.show()
 ssim = 0
 psnr = 0
 mse = 0
+
+original_dist = []
+generated_dist = []
+
 for i in range(samples):
     original_sample = (dataset[random.randint(n)])['image']
-    original_sample = tf.resize(original_sample, (116,256), anti_aliasing= True)
+    original_sample = (tf.resize(original_sample, (116,256), anti_aliasing= True, preserve_range=True)).astype(np.uint8)
     generated_sample = io.imread(os.path.join(root_generated, ".".join([str(i),'jpg'])))
     
+   
+    generated_dist.append(torch.from_numpy(generated_sample.transpose(2,0,1)))
+        
     ssim += metrics.structural_similarity(original_sample, generated_sample, channel_axis = 2)
     psnr += metrics.peak_signal_noise_ratio(original_sample, generated_sample)
     mse += metrics.mean_squared_error(original_sample, generated_sample)
@@ -62,12 +71,29 @@ ssim = ssim/samples
 psnr = psnr/samples
 mse = mse/samples
 
+generated_dist = torch.stack(generated_dist)
+
+n = len(dataset)
+
+for i in range(n):
+    original_sample = (dataset[i])['image']
+    original_sample = (tf.resize(original_sample, (116,256), anti_aliasing= True, preserve_range=True)).astype(np.uint8)
+    original_dist.append(torch.from_numpy(original_sample.transpose(2,0,1)))
+
+original_dist = torch.stack(original_dist)
+
+fid = FrechetInceptionDistance(feature=64)
+fid.update(original_dist, real=True)
+fid.update(generated_dist, real=False)
+fid_r = fid.compute()
+
+
 print('SSIM: {}'.format(ssim))
 print('PSNR: {}'.format(psnr))
 print('MSE: {}'.format(mse))
+print('FID: {}'.format(fid_r.item()))
 
-
-dcgan_wsgp = 'Generated_images/DCGAN_wsgp'
+""" dcgan_wsgp = 'Generated_images/DCGAN_wsgp'
 aee_mse = 'Generated_images/AEE_MSE'
 aee_perceptual = 'Generated_images/AEE_perceptual_adversarial'
 aee_ws_mse = 'Generated_images/AEE_ws_MSE'
@@ -95,4 +121,4 @@ for i in range(nsamples):
   
 plt.show()        
 
-fig.savefig('comparison.png')
+fig.savefig('comparison.png') """
