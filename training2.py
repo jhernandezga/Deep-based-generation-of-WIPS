@@ -37,6 +37,7 @@ from torchgan.models import DCGANDiscriminator
 from torchgan.losses import *
 from torchgan.trainer import Trainer
 from torchgan.trainer import ParallelTrainer, BaseTrainer
+from ddp_trainer import DistributedParallelTrainer
 #from torchgan.logging import Logger
 
 from Resources.wips_dataset import wipsDataset
@@ -52,7 +53,7 @@ torch.manual_seed(manualSeed)
 print("Random Seed: ", manualSeed)
 
 
-devices = ["cuda:0","cuda:1","cuda:2","cuda:3"]
+devices = ["cuda:0","cuda:1"]
 
 # Training images
 images_root = 'Resources/Images'
@@ -61,25 +62,27 @@ images_reference = 'Resources/wips_reference.csv'
 images_network = 'DCGAN_experiments/logs/tensorboard/training_network'
 
 #logger directory
-train_log_dir = 'ResNetExperiments/logs/train_res_56_3'
+train_log_dir = 'ResNetExperiments/logs/train_res_58_3'
 #checkpoint of saved models
-checkpoints_path = 'ResNetExperiments/models/model_res_56_3/gan'
+checkpoints_path = 'ResNetExperiments/models/model_res_58_3/gan'
 #path of generated images
-images_path  = 'ResNetExperiments/images/images_res_56_3'
+images_path  = 'ResNetExperiments/images/images_res_58_3'
 
 #Checkpoint load path
 
-load_path = 'ResNetExperiments/models/model_res_56_2/gan9.model'
+load_path = 'ResNetExperiments/models/model_res_58_2/gan9.model'
 
 #Category of species to train
-species_category = 56
+species_category = 58
 
-batch_size = 16
-#dont change, modify model   
+batch_size = 8
+#dont change, modify model
+
+
 #Number of generated images at each training epoch
-generated_samples = 8 
+generated_samples = 8  
 
-epochs = 16000
+epochs = 4000
 
 trainer = None 
 
@@ -87,30 +90,18 @@ trainer = None
 ####################################
 ###  dcgan_network, aee_network , dcgan_network_2x, began_network, resnet_network_2x, hybrid_network, mod_wsgp_network ###
 #resnet_network_pack
-network = resnet_network_l
+network = resnet_network
 ###########################################################
 ## DCGAN: minimax_losses, wgangp_losses, lsgan_losses, 
 ## AEE: wassertein_losses, perceptual_losses, wassL1_losses
 losses_net = wgandiv_losses
 
-transform1 = transforms.RandomApply(
-    torch.nn.ModuleList([
-        transforms.RandomAdjustSharpness(0.5),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(5),
-        transforms.AugMix()
-        ]),
-    p=0.5)
-
-transform = transforms.Compose([
-        transform1,
-        transforms.ToTensor()
-        ])
+transform = None
 #transform = transforms.RandomHorizontalFlip()
 
 if torch.cuda.device_count() > 1:
     # Use deterministic cudnn algorithms
-    #torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.deterministic = True
     trainer = ParallelTrainer(
     network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints = 10, ncritic=5)
 else :
@@ -125,11 +116,11 @@ print("CUDA available: ",torch.cuda.is_available())
 #print("Device: {}".format(torch.cuda.get_device_name(device)))
 print("Epochs: {}".format(epochs))
 
-train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last= True, transform = transform)
+train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=True, transform = transform)
 #train_dataloader = get_packed_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=False, packing_num=2)
 
 trainer.load_model(load_path=load_path)
-trainer(train_dataloader)
 
+trainer(train_dataloader)
 #for batch_idx, (dataa, target) in enumerate(train_dataloader):
-#print(dataa.shape)
+#    print(dataa.shape)

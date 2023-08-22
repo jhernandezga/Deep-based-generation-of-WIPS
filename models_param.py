@@ -17,7 +17,7 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
-from IPython.display import HTML
+
 
 # Pytorch and Torchvision Imports
 import torch
@@ -37,7 +37,7 @@ from torchgan.models import DCGANDiscriminator
 from torchgan.models import AutoEncodingDiscriminator
 
 from torchgan.losses import *
-from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, EncoderGeneratorBEGAN, ResNetDiscriminator, ResNetGenerator, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss
+from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, ConditinalResNetDiscriminator, ConditionalResNetGenerator, DIsoMapLoss, EncoderGeneratorBEGAN, HingeDiscriminatorLoss, HingeGeneratorLoss, LossDLL, LossEntropyDiscriminator, LossEntropyGenerator, MaFLoss, PacResNetDiscriminator, PackedWassersteinDiscriminatorLoss, PackedWassersteinGradientPenalty, PackedWasserteinGeneratorLoss, ResNetDiscriminator, ResNetDiscriminator256, ResNetDiscriminatorMod, ResNetGenerator, ResNetGenerator256, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss, WassersteinDivergence
 
 
 
@@ -63,7 +63,7 @@ dcgan_network = {
         "args": {
             "in_size":256,
             "in_channels": 3,
-            "step_channels": 64,
+            "step_channels": 32,
             "batchnorm": True,
             "nonlinearity": nn.LeakyReLU(0.2),
             "last_nonlinearity": nn.LeakyReLU(0.2)
@@ -152,9 +152,86 @@ resnet_network = {
             "in_channels": 3,
             "step_channels": 32,
         },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0.5, 0.999)}},
+    },
+}
+
+
+resnet_network_l = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+            "leaky": True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            "leaky": True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0.5, 0.999)}},
+    },
+}
+
+
+
+resnet_network_2 = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 200,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+        },
         "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
     },
 }
+
+
+resnet_network_pack = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": PacResNetDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            "packing_num":2
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
+
 
 resnet_network_2x = {
     "generator": {
@@ -205,7 +282,106 @@ resnet_network_sn = {
 }
 
 
+hybrid_network = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+     "discriminator": {
+        "name": DCGANDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            "batchnorm": True,
+            "nonlinearity": nn.LeakyReLU(0.2),
+            "last_nonlinearity": nn.LeakyReLU(0.2)
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
 
+
+mod_wsgp_network = {
+    "generator": {
+        "name": ResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 100,
+            "out_channels": 3,
+            "step_channels": 32,
+            "last_nonlinearity": nn.Tanh(),
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0001, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminatorMod,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            "num_outcomes" :8,
+            "spectral_normalization": True,
+            "new_model": True,
+            "use_adaptive_reparam": False
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0003, "betas": (0.5, 0.999)}},
+    },
+}
+
+
+resnet_256 = {
+    "generator": {
+        "name": ResNetGenerator256,
+        "args": {
+            "encoding_dims": 128,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0, 0.9)}},
+    },
+    "discriminator": {
+        "name": ResNetDiscriminator256,
+        "args": {
+            "in_channels": 3,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0, 0.9)}},
+    },
+}
+
+
+c_resnet = {
+    "generator": {
+        "name": ConditionalResNetGenerator,
+        "args": {
+            "out_size":256,
+            "encoding_dims": 128,
+            "num_classes": 145,
+            "out_channels": 3,
+            "step_channels": 32,
+            "label_embed_size": 10,
+            "last_nonlinearity": nn.Tanh(),
+            "leaky": True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0.5, 0.999)}},
+    },
+    "discriminator": {
+        "name": ConditinalResNetDiscriminator,
+        "args": {
+            "in_size":256,
+            "in_channels": 3,
+            "step_channels": 32,
+            "num_classes": 145,
+            "leaky": True,
+        },
+        "optimizer": {"name": Adam, "args": {"lr": 0.0002, "betas": (0.5, 0.999)}},
+    },
+}
 
 minimax_losses = [MinimaxGeneratorLoss(), MinimaxDiscriminatorLoss()]
 wgangp_losses = [
@@ -215,7 +391,34 @@ wgangp_losses = [
 ]
 lsgan_losses = [LeastSquaresGeneratorLoss(), LeastSquaresDiscriminatorLoss()]
 
+wgandiv_losses = [
+    WassersteinGeneratorLoss(),
+    WassersteinDiscriminatorLoss(),
+    WassersteinDivergence(), 
+]
 
+pgngan_losses = [
+    HingeDiscriminatorLoss(),
+    HingeGeneratorLoss(),
+]
+
+wgangp_pack_losses = [
+    PackedWasserteinGeneratorLoss(),
+    PackedWassersteinDiscriminatorLoss(),
+    PackedWassersteinGradientPenalty(),
+    
+]
+
+wsgp_mod_losses = [
+    LossDLL(),
+    LossEntropyDiscriminator(),
+    MaFLoss(),
+    DIsoMapLoss(),
+    #LossEntropyGenerator(),
+    #WassersteinDiscriminatorLoss(),
+    WassersteinGradientPenalty(),
+    WassersteinGeneratorLoss()
+]
 
 
 

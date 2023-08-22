@@ -26,17 +26,21 @@ from utils import *
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv' 
 
-samples = 20
+samples = 100
 
-root_generated = 'Generated_images/ResNet_wsgp_s144'
+root_generated = 'Generated_images/Resnet_wsdiv_58_st'
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'
 
-species_category = 144   
+species_category = 58   
 
 dataset = get_dataset(images_root, images_reference,category=species_category)
 n = len(dataset)
+
+
+
 original_sample = (dataset[random.randint(n)])['image']
+
 resized_image = tf.resize(original_sample, (116,256), anti_aliasing= True, preserve_range=True) 
 
 plt.imshow(resized_image)

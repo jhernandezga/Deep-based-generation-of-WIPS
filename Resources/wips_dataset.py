@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from PIL import Image
+from torchvision.transforms.functional import to_pil_image
+
 
 
 # Ignore warnings
@@ -52,6 +54,8 @@ class wipsDataset(Dataset):
         sex = self.image_frame.iloc[idx,3]
         image = io.imread(img_name)
         
+        # Convert image to uint8
+        image = image.astype(np.uint8)
         
         # Check if the image has an alpha channel (RGBA)
         if image.shape[-1] == 4:
@@ -59,10 +63,11 @@ class wipsDataset(Dataset):
             image = color.rgba2rgb(image)
         
         sample = {'image': image, 'img_name':img_name, 'category': category, 'sex':sex}
-
+        
         if self.transform:
-            sample['image'] = self.transform(image)
-
+            img = to_pil_image(sample['image'].astype(np.uint8))
+            sample['image'] = self.transform(img)
+            
         return sample
         
 """

@@ -48,23 +48,25 @@ device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.get_device_name(device))
 devices = ["cuda:0", "cuda:1"] 
  
-load_path  = 'ResNetExperiments/models/model_res_58_3/gan9.model'
-saving_path = 'Generated_images/Resnet_wsdiv_58_st'
+load_path  = 'ResNetExperiments/models/model_c5/gan9.model'
+saving_path = 'Generated_images/ResNet_c'
+class_n = [76]
 
 
 params = torch.load(load_path)
-params_net = resnet_network["generator"]
+params_net = c_resnet["generator"]
 
 state_dict = params['generator']
 
 test = False
-samples = 117
+samples = 20
 
 print('Epoch: ',params['epoch'])
 
 state_dict_mapping = {
     'model.module.': 'module.model.',
     'linear.module.': 'module.linear.',
+    'label_embedding.module':'module.label_embedding',
 }
 
 new_state_dict = OrderedDict()
@@ -78,16 +80,18 @@ for key, value in state_dict.items():
 
 
 #print(params['generator'])
-netGen = ResNetGenerator(**params_net['args']).to(device)
+netGen = ConditionalResNetGenerator(**params_net['args']).to(device)
 netGen = torch.nn.DataParallel(netGen, devices).to(devices[0])
 netGen.load_state_dict(new_state_dict)
 netGen.eval()
 
+class_n = torch.tensor(class_n).to(next(netGen.parameters()).device)
+
 if test:
-    z = torch.randn(1,100,1,1, device=device)
+    z = torch.randn(1,128,1,1, device=device)
     with torch.no_grad():
         z = z.to(next(netGen.parameters()).device)
-        generated_img = netGen(z).detach().cpu()
+        generated_img = netGen(z,class_n).detach().cpu()
         generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
         plt.axis("off")
         plt.title("Generated Images")
@@ -97,12 +101,12 @@ if test:
 
 else:
     for i in range(samples):
-        z = torch.randn(1,1,1,100, device=device)
+        z = torch.randn(1,1,1,128, device=device)
         with torch.no_grad():
             # Get generated image from the noise vector using
             # the trained generator.
             z = z.to(next(netGen.parameters()).device)
-            generated_img = netGen(z).detach().cpu()[0]
+            generated_img = netGen(z,class_n).detach().cpu()[0]
             generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
             generated_img = np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0))
             generated_img = (generated_img * 255).numpy().astype(np.uint8)

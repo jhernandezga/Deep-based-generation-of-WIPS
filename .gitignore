@@ -23,6 +23,10 @@ model_test4/
 Generated_images/
 BEGAN_experiments/
 ResNetExperiments/
-
+Extra/wips_reference.csv
+Extra/MarksData2.xlsx
+StyleGanExperiments/
+comparison2.png
+comparison3.png
 .vscode/
 .conda/

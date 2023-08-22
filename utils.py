@@ -6,6 +6,7 @@ import torch.utils.data as data
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from torchvision.transforms.functional import to_pil_image
 
 
@@ -21,10 +22,9 @@ std_data = [0.3231,0.2541,0.1689]
 #transform = transforms.Compose(transforms.ToTensor())
 
 # -1 get all dataset
-def get_dataset(images_root = images_root,images_reference = images_reference,category = -1):
-    dataset = wipsDataset(images_reference,images_root, category = category)
+def get_dataset(images_root = images_root,images_reference = images_reference,category = -1, transform = None):
+    dataset = wipsDataset(images_reference,images_root, category = category, transform = transform)
     return dataset
-
 
 def custom_collate(batch):
     resized_batch = []
@@ -34,6 +34,7 @@ def custom_collate(batch):
         pil_image = to_pil_image(image)  # Convert to PIL image
         #resized_image = transforms.Resize((232, 512))(pil_image)
         resized_image = transforms.Resize((116, 256))(pil_image)
+        #resized_image = transforms.Resize((116, 256))(pil_image)
         #padded_image = transforms.Pad((0,0,0,280))(resized_image)
         #padded_image = transforms.Pad((0,0,0,24))(resized_image)
         padded_image = transforms.Pad((0,0,0,140))(resized_image)
@@ -49,8 +50,46 @@ def custom_collate(batch):
 
     return stacked_batch_images, stacked_categories
 
-def get_dataloader(images_root = images_root, images_reference = images_reference ,batch_size = 16,train__size_factor = 1,category = -1):
-    dataset = get_dataset(images_root = images_root, images_reference = images_reference, category = category)
+def get_dataloader(images_root = images_root, images_reference = images_reference ,batch_size = 16,train__size_factor = 1,category = -1, drop_last = False, transform = None):
+    #transform = transforms.RandomHorizontalFlip()
+    dataset = get_dataset(images_root = images_root, images_reference = images_reference, category = category, transform = transform)
     train_size = int(train__size_factor * len(dataset))
-    train_dataloader = data.DataLoader(dataset, batch_size, shuffle= True, collate_fn= custom_collate)
+    train_dataloader = data.DataLoader(dataset, batch_size, shuffle= True, collate_fn= custom_collate, drop_last = drop_last)
     return train_dataloader
+
+
+
+
+class PackedWipsDataset(Dataset):
+    def __init__(self, original_dataset, packing_num=2):
+        self.original_dataset = original_dataset
+        self.packing_num = packing_num
+        self.length = (len(self.original_dataset)//packing_num)
+
+    def __getitem__(self, index):
+        combined_images = []
+        for i in range(self.packing_num):
+            pil_image = to_pil_image(self.original_dataset[index * self.packing_num + i]["image"])
+            resized_image = transforms.Resize((116, 256))(pil_image)
+            padded_image = transforms.Pad((0,0,0,140))(resized_image)
+            resized_tensor = transforms.ToTensor()(padded_image)
+            combined_images.append(resized_tensor)
+        combined_image = torch.cat(combined_images, dim=0)
+        return combined_image
+    def __len__(self):
+        return self.length
+    
+def get_packed_dataloader(images_root = images_root, images_reference = images_reference ,batch_size = 16,train__size_factor = 1,category = -1, drop_last = False, packing_num = 2):
+    dataset = get_dataset(images_root = images_root, images_reference = images_reference, category = category)
+    packed_dataset = PackedWipsDataset(dataset, packing_num=packing_num)
+    dataloader = data.DataLoader(packed_dataset, batch_size, shuffle= True, drop_last = drop_last)
+    return dataloader
+
+
+""" dataloader = get_dataloader(images_root = images_root, images_reference = images_reference ,batch_size = 8,train__size_factor = 1,category = -1, drop_last = False, transform = None)
+
+
+for i, (images, categories) in enumerate(dataloader):
+    print(images.shape)
+    print(categories)
+    break """

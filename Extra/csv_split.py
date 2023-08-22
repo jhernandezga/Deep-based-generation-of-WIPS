@@ -18,8 +18,10 @@ frame = pd.read_csv(file)
 
 #print(frame.iloc[483])
 
+frame['species name'] = frame['species name'].str.lower()
+
 frame.sort_values(by=['category','photo'], inplace= True)
-file_name = 'MarksData.xlsx'
+file_name = 'MarksData2.xlsx'
 
 cat = frame['category'].value_counts()
 species = frame['species name'].value_counts()
