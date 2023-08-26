@@ -44,12 +44,12 @@ from skimage.io import imsave
 
 from collections import OrderedDict
 
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.get_device_name(device))
-devices = ["cuda:1", "cuda:2", "cuda:3"] 
+devices = ["cuda:0", "cuda:1"] 
  
-load_path  = 'ResNetExperiments/models/model_res2/model_res22.model'
-saving_path = 'Generated_images/ResNet_wsgp1'
+load_path  = 'DCGAN_experiments/models/model_test4/gan4.model'
+saving_path = 'Generated_images/DCGAN_wsgp'
 
 
 params = torch.load(load_path)
@@ -58,7 +58,7 @@ params_net = dcgan_network["generator"]
 state_dict = params['generator']
 
 test = False
-samples = 20
+samples = 100
 
 print('Epoch: ',params['epoch'])
 

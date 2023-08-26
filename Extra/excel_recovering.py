@@ -31,11 +31,11 @@ for x in a.index:
   if  a.loc[x, "M/f/ND(0/1/2)"] == 'ND':
     a.loc[x, "M/f/ND(0/1/2)"] = '2'
     
-a['sous espèce'] = a.fillna('ND')      
+#a['sous espèce'] = a.fillna('ND')      
 a['individus'] = a['individus'].astype('string') 
 a['Catégorie'] = a['Catégorie'].astype('int16') 
 a["M/f/ND(0/1/2)"] = a["M/f/ND(0/1/2)"].astype('int8')
-a['Date photo'] = pd.to_datetime(a['Date photo'],infer_datetime_format=True)
+#a['Date photo'] = pd.to_datetime(a['Date photo'],infer_datetime_format=True)
 a = a.drop_duplicates()    
 #print(a.head())
 #print(a.describe())
@@ -46,7 +46,7 @@ pd.set_option('display.max_rows', 200)
 print(a['Espèce'].value_counts())
 print(a['Catégorie'].value_counts())
 b = a[['Espèce','Catégorie']]
-print(b.corr())
+#print(b.corr())
 
 
 print(a.info())
@@ -55,7 +55,7 @@ print(a.info())
 #fig1 = histogram.get_figure()
 #fig1.savefig('species.jpg')
 
-data_reference = a[['photo N°',"Nom commun de l'espèce","Catégorie",'M/f/ND(0/1/2)']]
+data_reference = a[['photo N°','Genre','sous genre','Espèce','sous espèce',"Nom commun de l'espèce","Catégorie",'M/f/ND(0/1/2)']]
 data_reference["Nom commun de l'espèce"] = data_reference["Nom commun de l'espèce"].astype('category')
 data_reference["Catégorie"] = data_reference["Catégorie"].astype('category')
 data_reference["photo N°"] = data_reference["photo N°"].astype('int16')
@@ -67,4 +67,4 @@ print(data_reference["Catégorie"].value_counts())
 print(data_reference["Nom commun de l'espèce"].value_counts())
 #print(a.head())
 data_reference.rename(columns = {"Nom commun de l'espèce":'species name','Catégorie':'category','photo N°':'photo'}, inplace = True)
-data_reference.to_csv('wips_reference.csv',index = False)
+data_reference.to_csv('wips_referenceXX.csv',index = False)

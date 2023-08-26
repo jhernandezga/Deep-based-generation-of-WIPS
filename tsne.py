@@ -18,15 +18,15 @@ from utils import get_dataset, get_dataloader
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv' 
 
-samples = 100
+samples = 50
 #root_generated = 'Generated_images/ResNet_wsdiv'
-root_generated = 'Generated_images/ResNet_wsdiv'
+root_generated = 'Generated_images/ResNet_wsdiv_51'
 root_generated2 = 'Generated_images/ResNet_wsgp_s144_2'
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'
 
 
-species_category = 144
+species_category = 51
 
 dataset = get_dataset(images_root, images_reference,category=species_category)
 #dataset2 = get_dataset(images_root, images_reference,category=46)
@@ -63,47 +63,51 @@ for i in range(samples):
         featuresx = featuresx.view(featuresx.size(0), -1).numpy()
         features_gen.extend(featuresx)
 
-features_gen2 = []
+""" features_gen2 = []
 for i in range(100):
     with torch.no_grad():
         generated_sample = io.imread(os.path.join(root_generated2, ".".join([str(i),'jpg'])))
         generated_sample = torch.from_numpy(generated_sample).permute(2,0,1).unsqueeze(0).to(torch.float32)
         featuresx1 = feature_extractor(generated_sample)
         featuresx1 = featuresx1.view(featuresx1.size(0), -1).numpy()
-        features_gen2.extend(featuresx1)  
+        features_gen2.extend(featuresx1) """  
 
         
 features = np.array(features)
 #features2 = np.array(features2)
 features_gen = np.array(features_gen)
-features_gen2 = np.array(features_gen2)
+#features_gen2 = np.array(features_gen2)
 
+joined_features = np.vstack((features,features_gen))
 #normalization
-features = (features - features.mean(axis=0)) / features.std(axis=0)
+#features = (features - features.mean(axis=0)) / features.std(axis=0)
 #features2 = (features2 - features2.mean(axis=0)) / features2.std(axis=0)
-features_gen = (features_gen - features_gen.mean(axis=0)) / features_gen.std(axis=0)
-features_gen2 = (features_gen2 - features_gen2.mean(axis=0)) / features_gen2.std(axis=0)
+#features_gen = (features_gen - features_gen.mean(axis=0)) / features_gen.std(axis=0)
+#features_gen2 = (features_gen2 - features_gen2.mean(axis=0)) / features_gen2.std(axis=0)
 
-features = np.nan_to_num(features, nan=0.0)
+joined_features = (joined_features - joined_features.mean(axis=0)) / joined_features.std(axis=0)
+#features = np.nan_to_num(features, nan=0.0)
 #features2 = np.nan_to_num(features2, nan=0.0)
-features_gen = np.nan_to_num(features_gen, nan=0.0)
-features_gen2 = np.nan_to_num(features_gen2, nan=0.0)
-
+#features_gen = np.nan_to_num(features_gen, nan=0.0)
+#features_gen2 = np.nan_to_num(features_gen2, nan=0.0)
+joined_features = np.nan_to_num(joined_features, nan=0.0)
 #print("NaN values in features_gen trans:", np.isnan(features_gen2).any())
 
-data = np.vstack((features,features_gen, features_gen2))
+data = joined_features
+#np.random.shuffle(data)
 #data = np.vstack((features, features2, features_gen,features_gen2))
-tsne = TSNE(n_components=2, random_state=42, perplexity=50, n_iter=600000)
+tsne = TSNE(n_components=2, random_state=42, perplexity=30, n_iter=2000)
 
 embedded_features = tsne.fit_transform(data)
+print(tsne.kl_divergence_)
 
 plt.figure(figsize=(10, 8))
 plt.scatter(embedded_features[:len(features), 0], embedded_features[:len(features), 1], c='b', marker='*')
 #plt.scatter(embedded_features[len(features):(len(features)+len(features2)), 0], embedded_features[len(features):(len(features)+len(features2)), 1], c='r', marker='.')
 plt.scatter(embedded_features[(len(features)):(len(features)+len(features_gen)), 0], embedded_features[(len(features)):(len(features)+len(features_gen)), 1], c='g', marker='.')
-plt.scatter(embedded_features[(len(features)+len(features_gen)):(len(features)+len(features_gen)+len(features_gen2)), 0], embedded_features[(len(features)+len(features_gen)):(len(features)+len(features_gen)+len(features_gen2)), 1], c='r', marker='.')
+#plt.scatter(embedded_features[(len(features)+len(features_gen)):(len(features)+len(features_gen)+len(features_gen2)), 0], embedded_features[(len(features)+len(features_gen)):(len(features)+len(features_gen)+len(features_gen2)), 1], c='r', marker='.')
 #plt.scatter(embedded_features[(len(features)+len(features2)+len(features_gen)):(len(features)+len(features2)+len(features_gen)+len(features_gen2)), 0], embedded_features[(len(features)+len(features2)+len(features_gen)):(len(features)+len(features2)+len(features_gen)+len(features_gen2)), 1], c='y', marker='.')
 plt.title("t-SNE Visualization of Image Features")
-plt.legend(['Real 144', 'Generated 144'])
+plt.legend(['Original images label {}'.format(species_category), 'Generated images label {}'.format(species_category)], loc='upper right',fontsize=18, handlelength=2)
 plt.show()
 

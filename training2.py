@@ -62,27 +62,27 @@ images_reference = 'Resources/wips_reference.csv'
 images_network = 'DCGAN_experiments/logs/tensorboard/training_network'
 
 #logger directory
-train_log_dir = 'ResNetExperiments/logs/train_res_58_3'
+train_log_dir = 'ResNetExperiments/logs/train_51_1'
 #checkpoint of saved models
-checkpoints_path = 'ResNetExperiments/models/model_res_58_3/gan'
+checkpoints_path = 'ResNetExperiments/models/model_51_1/gan'
 #path of generated images
-images_path  = 'ResNetExperiments/images/images_res_58_3'
+images_path  = 'ResNetExperiments/images/images_51_1'
 
 #Checkpoint load path
 
-load_path = 'ResNetExperiments/models/model_res_58_2/gan9.model'
+load_path = 'ResNetExperiments/models/model_51_0/gan9.model'
 
 #Category of species to train
-species_category = 58
+species_category = 51
 
-batch_size = 8
+batch_size = 4
 #dont change, modify model
 
 
 #Number of generated images at each training epoch
 generated_samples = 8  
 
-epochs = 4000
+epochs = 6500
 
 trainer = None 
 
@@ -96,7 +96,17 @@ network = resnet_network
 ## AEE: wassertein_losses, perceptual_losses, wassL1_losses
 losses_net = wgandiv_losses
 
-transform = None
+transform1 = transforms.RandomApply(
+    torch.nn.ModuleList([
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(5),
+        ]),
+    p=0.5)
+
+transform = transforms.Compose([
+        transform1,
+        transforms.ToTensor()
+        ])
 #transform = transforms.RandomHorizontalFlip()
 
 if torch.cuda.device_count() > 1:
@@ -116,7 +126,7 @@ print("CUDA available: ",torch.cuda.is_available())
 #print("Device: {}".format(torch.cuda.get_device_name(device)))
 print("Epochs: {}".format(epochs))
 
-train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=True, transform = transform)
+train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=False, transform = transform)
 #train_dataloader = get_packed_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=False, packing_num=2)
 
 trainer.load_model(load_path=load_path)

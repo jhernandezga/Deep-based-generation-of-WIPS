@@ -61,25 +61,25 @@ images_reference = 'Resources/wips_reference.csv'
 images_network = 'DCGAN_experiments/logs/tensorboard/training_network'
 
 #logger directory
-train_log_dir = 'ResNetExperiments/logs/train_54_1'
+train_log_dir = 'ResNetExperiments/logs/train_50_0'
 #checkpoint of saved models
-checkpoints_path = 'ResNetExperiments/models/model_54_1/gan'
+checkpoints_path = 'ResNetExperiments/models/model_50_0/gan'
 #path of generated images
-images_path  = 'ResNetExperiments/images/images_54_1'
+images_path  = 'ResNetExperiments/images/images_50_0'
 
 #Checkpoint load path
 
-load_path = 'ResNetExperiments/models/model_54_0/gan9.model'
+load_path = 'ResNetExperiments/models/model_c4/gan9.model'
 
 #Category of species to train
-species_category = 54
+species_category = 50
 
-batch_size = 4
+batch_size = 8
 #dont change, modify model   
 #Number of generated images at each training epoch
-generated_samples = 8 
+generated_samples = 16 
 
-epochs = 8500
+epochs = 6000
 
 trainer = None 
 
@@ -123,11 +123,8 @@ print("CUDA available: ",torch.cuda.is_available())
 #print("Device: {}".format(torch.cuda.get_device_name(device)))
 print("Epochs: {}".format(epochs))
 
-train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last= True, transform = transform)
+train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last= False, transform = transform)
 #train_dataloader = get_packed_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=False, packing_num=2)
 
-trainer.load_model(load_path=load_path)
+#trainer.load_model(load_path=load_path)
 trainer(train_dataloader)
-
-#for batch_idx, (dataa, target) in enumerate(train_dataloader):
-#print(dataa.shape)

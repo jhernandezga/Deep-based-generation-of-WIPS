@@ -48,8 +48,8 @@ device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(torch.cuda.get_device_name(device))
 devices = ["cuda:0", "cuda:1"] 
  
-load_path  = 'ResNetExperiments/models/model_res_58_3/gan9.model'
-saving_path = 'Generated_images/Resnet_wsdiv_58_st'
+load_path  = 'ResNetExperiments/models/model_57_0/gan9.model'
+saving_path = 'Generated_images/ResNet_wsdiv_57'
 
 
 params = torch.load(load_path)
@@ -58,7 +58,7 @@ params_net = resnet_network["generator"]
 state_dict = params['generator']
 
 test = False
-samples = 117
+samples = 50
 
 print('Epoch: ',params['epoch'])
 

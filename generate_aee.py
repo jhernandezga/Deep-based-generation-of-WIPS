@@ -40,19 +40,19 @@ from models_param import *
 from skimage.io import imsave, imread
 
 
-load_path  = 'AEE_experiments/models/model_ws2/gan4.model'
+load_path  = 'AEE_experiments/models/model_mse/gan4.model'
 params = torch.load(load_path, map_location='cpu')
-saving_path = 'Generated_images/AEE_ws_MSE'
+saving_path = 'Generated_images/AEE_MSE'
 
 test = False
-samples = 20
+samples = 100
 
 print('Epoch: ',params['epoch'])
 
 print(params.keys())
 state_dict = params['generator']
 
-devices = ["cuda:1", "cuda:2", "cuda:3"] 
+devices = ["cuda:0", "cuda:1"] 
 
 """ # create new OrderedDict that does not contain `module.`
 from collections import OrderedDict
@@ -108,5 +108,7 @@ else:
             z = z.to(next(netGen.parameters()).device)
             generated_img = netGen(z).detach().cpu()
             generated_img = transforms.functional.crop(generated_img, top=0, left=0, height=116, width=256)
-            generated_img = np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0))
-            imsave("{}/{}.jpg".format(saving_path,i), generated_img)
+            generated_img = np.transpose(vutils.make_grid(generated_img, padding=2, normalize=True), (1,2,0)).cpu().numpy()
+            
+            image_numpy_uint = (generated_img * 255).astype(np.uint8)
+            imsave("{}/{}.jpg".format(saving_path,i), image_numpy_uint)
