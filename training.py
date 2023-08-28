@@ -1,3 +1,30 @@
+"""
+Script: training.py
+==================
+
+Executes the training procedure in the defined network and parameters
+
+Author:
+    Jorge Andrés Hernández Galeano
+    https://github.com/jhernandezga
+    jhernandezga@unal.edu.co
+
+Date:
+    2023-08-26
+
+Description:
+    - It uses the training procedure following the Torchgan Framework
+    - This module supports multi-GPU training
+    - GPU training is highly recommended
+
+Usage:
+    Set the paths to the training and the parameters. Run script
+    
+    If visualization of training at real-time is desired:
+        after running this script, execute in a terminal:    tensorboard --logdir = train_log_dir
+
+"""
+
 try:
     import torchgan
 
@@ -43,6 +70,12 @@ from Resources.wips_dataset import wipsDataset
 from utils import get_dataloader, get_packed_dataloader
 from models_param import *
 
+
+# Training images
+images_root = 'Resources/Images'
+images_reference = 'Resources/wips_reference.csv' 
+
+
 torch.cuda.empty_cache()
 
 # Set random seed for reproducibility
@@ -52,47 +85,69 @@ torch.manual_seed(manualSeed)
 print("Random Seed: ", manualSeed)
 
 
+
+##################################### REQUIRED PARAMETERS ################################################################
+
+## Specify GPU devices to use
 devices = ["cuda:0","cuda:1"]
 
-# Training images
-images_root = 'Resources/Images'
-images_reference = 'Resources/wips_reference.csv'  
+train_log_dir = 'ResNetExperiments\logs'             #Path to logger directory(Where data used for the logger will be saved)
 
-images_network = 'DCGAN_experiments/logs/tensorboard/training_network'
+checkpoints_path = 'ResNetExperiments\models\gan'    #Path where checkpoint models will be saved
 
-#logger directory
-train_log_dir = 'ResNetExperiments/logs/train_54_1'
-#checkpoint of saved models
-checkpoints_path = 'ResNetExperiments/models/model_54_1/gan'
-#path of generated images
-images_path  = 'ResNetExperiments/images/images_54_1'
+images_path  = 'ResNetExperiments\images'           #Path where generated images during training will be saved
 
-#Checkpoint load path
-
-load_path = 'ResNetExperiments/models/model_54_0/gan9.model'
+load_checkpoint = False                                      # False: Training will be started from scratch , True: Training will be started from a checkpoint model
+load_path = 'ResNetExperiments/models/model_54_0/gan9.model' #Path to checkpoint model
 
 #Category of species to train
 species_category = 54
 
 batch_size = 4
-#dont change, modify model   
-#Number of generated images at each training epoch
-generated_samples = 8 
+  
+generated_samples = 8                      #Number of generated images at each training epoch, used for logging purposes
 
-epochs = 8500
+epochs = 8500                              #Number of training epochs
 
-trainer = None 
+retain_checkpoints = 10                    #Number of checkpoints to retain X. Last X models will be saved, when #training epochs>X, checkpoints are overwritten
+n_critic = 5                               #Number of steps the discriminator will be trained before training the generator
+ 
+"""
+Specify the training network and its corresponding loss function
 
+Available pre-instantiated models in models/models_param.py:
 
-####################################
-###  dcgan_network, aee_network , dcgan_network_2x, began_network, resnet_network_2x, hybrid_network, mod_wsgp_network ###
-#resnet_network_pack
+->dcgan_network, dcgan_network_2x, hybrid_network
+->c_resnet       :conditional ResNet
+->resnet_network, resnet_network_l, resnet_network_2x, resnet_network_sn
+    - minimax_losses
+    - wgangp_losses
+    - lsgan_losses
+    - wgandiv_losses
+->resnet_network_pack          =PACGAN(it requires to use get_packed_dataloader from utils)
+    - wgangp_pack_losses
+->mod_wsgp_network
+    -wsgp_mod_losses
+
+->aee_network
+    -wassertein_losses
+    -perceptual_losses
+    -wassL1_losses
+-> began_network
+    -began_loss  
+"""
 network = resnet_network
-###########################################################
-## DCGAN: minimax_losses, wgangp_losses, lsgan_losses, 
-## AEE: wassertein_losses, perceptual_losses, wassL1_losses
 losses_net = wgandiv_losses
 
+###########################################################################################################################################################################################
+
+
+
+
+
+
+
+# Transformations during training
 transform1 = transforms.RandomApply(
     torch.nn.ModuleList([
         transforms.RandomHorizontalFlip(),
@@ -104,30 +159,30 @@ transform = transforms.Compose([
         transform1,
         transforms.ToTensor()
         ])
-#transform = transforms.RandomHorizontalFlip()
 
+trainer = None
+multi_gpu = False
 if torch.cuda.device_count() > 1:
     # Use deterministic cudnn algorithms
     #torch.backends.cudnn.deterministic = True
     trainer = ParallelTrainer(
-    network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints = 10, ncritic=5)
+    network,losses_net, sample_size = generated_samples, epochs=epochs, devices=devices, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints = retain_checkpoints, ncritic=n_critic)
+    multi_gpu = True
 else :
     device = torch.device(devices[0] if torch.cuda.is_available() else "cpu")    
     if torch.cuda.is_available():
         # Use deterministic cudnn algorithms
         torch.backends.cudnn.deterministic = True
-    trainer = Trainer(network,losses_net, sample_size = generated_samples, epochs=epochs, device=device, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path)
+    trainer = Trainer(network,losses_net, sample_size = generated_samples, epochs=epochs, device=device, log_dir = train_log_dir,  checkpoints= checkpoints_path, recon=images_path, retain_checkpoints=retain_checkpoints,ncritic=n_critic)
 
 
 print("CUDA available: ",torch.cuda.is_available())
-#print("Device: {}".format(torch.cuda.get_device_name(device)))
+print("Multi-GPU training: {}".format(multi_gpu))
 print("Epochs: {}".format(epochs))
 
-train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last= True, transform = transform)
-#train_dataloader = get_packed_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last=False, packing_num=2)
+## replace get_dataloader by get_packed_dataloader if PACGAN is being trained
+train_dataloader = get_dataloader(images_reference= images_reference, images_root=images_root,category = species_category,batch_size=batch_size, drop_last= False, transform = transform)
 
-trainer.load_model(load_path=load_path)
+if load_checkpoint:
+    trainer.load_model(load_path=load_path)
 trainer(train_dataloader)
-
-#for batch_idx, (dataa, target) in enumerate(train_dataloader):
-#print(dataa.shape)

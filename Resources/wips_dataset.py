@@ -1,3 +1,19 @@
+"""
+Module wips_dataset.py
+==================
+
+It defines the custom dataset loading structure of WIPs dataset for Pytorch
+
+Author:
+    Jorge Andrés Herández Galeano
+    https://github.com/jhernandezga
+    jhernandezga@unal.edu.co
+
+Date:
+    2023-08-26
+"""
+
+
 from __future__ import print_function, division
 import os
 import torch
@@ -69,34 +85,5 @@ class wipsDataset(Dataset):
             sample['image'] = self.transform(img)
             
         return sample
-        
-"""
-images_root = 'Images'
-images_reference = 'wips_reference.csv'        
-data = wipsDataset(images_reference,images_root)
 
 
-sample = data[10]
-print(sample['image'].shape, sample['category'], sample['sex'])
-plt.imshow(sample['image'])
-plt.show(block=True)"""
-
-"""fig = plt.figure()
-
-for i in range(len(data)):
-    sample = data[i]
-
-    print(sample['image'].shape, sample['category'], sample['sex'])
-    ax = plt.subplot(1, 4, i + 1)
-    plt.tight_layout()
-    ax.set_title('Sample #{}'.format(i))
-    ax.axis('off')
-    plt.imshow(sample['image'])
-
-    if i == 3:
-        plt.show(block=True)
-        break"""
-
-
-#image_frame = pd.read_csv(images_reference,header=None, skiprows= 1)
-#print(image_frame.head())

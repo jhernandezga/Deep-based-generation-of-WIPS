@@ -28,7 +28,7 @@ import torch.nn as nn
 
 import torchgan.models as models
 from aeegan_wassertein import AdversarialAutoencoderGenerator, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WassersteinGradientPenaltyMod
-from vgg_loss import VGGLoss
+from models.vgg_loss import VGGLoss
 import torchvision.transforms as transforms
 
 from collections import OrderedDict

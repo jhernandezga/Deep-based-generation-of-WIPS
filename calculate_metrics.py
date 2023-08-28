@@ -1,3 +1,27 @@
+"""
+Script: calculate_metrics.py
+==================
+
+Script to calculate metrics(SSIM and FID) in the dataset or generated images
+
+Author:
+    Jorge Andrés Hernández Galeano
+    https://github.com/jhernandezga
+    jhernandezga@unal.edu.co
+    
+
+Date:
+    2023-08-27
+
+Usage:
+    -Specify the required parameters and choose to calculate metrics over the dataset, the generated images or compare the generated samples with the dataset images
+    -Run the script
+
+#Output: Metrics Displayed in terminal output
+"""
+
+
+
 # Pytorch and Torchvision Imports
 import torch
 import torch.nn as nn
@@ -23,23 +47,28 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 
 from utils import *
 
-images_root = 'Resources/Images'
-images_reference = 'Resources/wips_reference.csv' 
+################### REQUIRED PARAMETERS #################
 
-samples = 100
+root_generated = 'Generated_images/ResNet_wsdiv_51'       #Path to generated images
 
-root_generated = 'Generated_images/ResNet_wsdiv_51'
 images_root = 'Resources/Images'
 images_reference = 'Resources/wips_reference.csv'
 
-species_category = 51
+species_category = 51                                      #The species category in the dataset/ specify it dataset images are used for calculations
 
-generated_samples = 50
-test_generated = True    #True: Uses Generated images , False: Uses Images from dataset #
+generated_samples = 50                                     #number of generated samples to take from /root_generated
+
+
+test_generated = True    #Metrics calculated over dataset or generated images True: Uses Generated images , False: Uses Images from dataset, to compare generated images with datase: False #
 FFID_calcul = True       #True: Calculates FID #
 SSIM_calcul = True       #True: Calculates SSIM #
 
 SSIM_inter = True        #True: Calculates SSIM between generated images and images from dataset #
+#########################################################################################################################
+
+
+
+
 
 
 dataset = get_dataset(images_root, images_reference,category=species_category)

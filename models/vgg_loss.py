@@ -1,10 +1,14 @@
+"""
+Perceptual loss implementation using VGG
+
+-Taken from: https://github.com/crowsonkb/vgg_loss/tree/master
+"""
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 from torchvision import models, transforms
 
-#https://github.com/crowsonkb/vgg_loss/blob/master/vgg_loss.py
 
 class VGGLoss(nn.Module):
     """Computes the VGG perceptual loss between two batches of images.

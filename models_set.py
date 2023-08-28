@@ -1,16 +1,67 @@
-try:
-    import torchgan
 
-    print(f"Existing TorchGAN {torchgan.__version__} installation found")
-except ImportError:
-    import subprocess
-    import sys
+"""
+Module:   models_set
+==================
 
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "torchgan"])
-    import torchgan
+This module contains the internal implementation of the classes of all generative models
 
-    print(f"Installed TorchGAN {torchgan.__version__}")
-    
+Author:
+    Jorge Andrés Hernández Galeano
+    https://github.com/jhernandezga
+    jhernandez@unal.edu.co
+
+Date:
+    2023-08-26
+
+Description:
+
+Models are set following the Torchgan Framework conventions. 
+https://torchgan.readthedocs.io/en/latest/
+
+- MODELS:  
+
+AdversarialAutoencoderGenerator
+AdversarialAutoencoderDiscriminator
+
+EncoderGeneratorBEGAN
+
+ResNetGenerator
+ResNetDiscriminator
+
+ConditionalResNetGenerator
+ConditinalResNetDiscriminator
+
+PacResNetDiscriminator
+ResNetDiscriminatorMod
+
+BigGanGenerator
+BigGanDiscriminator
+
+- Losses:
+
+WasserteinAutoencoderGeneratorLoss
+WasserteinAutoencoderDiscriminatorLoss
+WassersteinGradientPenaltyMod
+WasserteinL1AutoencoderGeneratorLoss
+AdversarialAutoencoderDiscriminatorLoss
+AdversarialAutoencoderGeneratorLoss
+PackedWasserteinGeneratorLoss
+PackedWassersteinDiscriminatorLoss
+
+WassersteinDivergence
+PackedWassersteinGradientPenalty
+
+LossDLL
+LossEntropyGenerator
+LossEntropyDiscriminator
+MaFLoss
+DIsoMapLoss
+
+HingeDiscriminatorLoss
+HingeGeneratorLoss
+
+"""
+
 # General Imports
 import os
 import random
@@ -54,22 +105,22 @@ from torchgan.losses.functional import (
     wasserstein_gradient_penalty,
 )
 
-from vgg_perceptual_loss import VGGPerceptualLoss
-from vgg_loss import VGGLoss
+from models.vgg_perceptual_loss import VGGPerceptualLoss
+from models.vgg_loss import VGGLoss
 
 from math import ceil, log
 
 from torch.nn.functional import interpolate
 from torch.nn.modules.sparse import Embedding
 
-from Blocks import (DiscriminatorBlock, DiscriminatorTop,
+from models.Blocks import (DiscriminatorBlock, DiscriminatorTop,
                            GSynthesisBlock, InputBlock)
-from CustomLayers import (EqualizedConv2d, EqualizedLinear,
+from models.CustomLayers import (EqualizedConv2d, EqualizedLinear,
                                  PixelNormLayer, Truncation)
 
-from CrossResplicaBN import ScaledCrossReplicaBatchNorm2d
+from models.CrossResplicaBN import ScaledCrossReplicaBatchNorm2d
 
-devices = ["cuda:1", "cuda:2", "cuda:3"]
+devices = ["cuda:0", "cuda:1", "cuda:2"]
 
 
 #####################################################################################################################
@@ -239,8 +290,6 @@ class WasserteinAutoencoderDiscriminatorLoss(DiscriminatorLoss):
         return loss.item()
 
 class WassersteinGradientPenaltyMod(DiscriminatorLoss):
-   
-
     def __init__(self, reduction="mean", lambd=10.0, override_train_ops=None):
         super(WassersteinGradientPenaltyMod, self).__init__(
             reduction, override_train_ops

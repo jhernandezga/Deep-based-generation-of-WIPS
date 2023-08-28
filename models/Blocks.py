@@ -11,7 +11,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-from CustomLayers import EqualizedLinear, LayerEpilogue, EqualizedConv2d, BlurLayer, View, StddevLayer
+from .CustomLayers import EqualizedLinear, LayerEpilogue, EqualizedConv2d, BlurLayer, View, StddevLayer
 
 
 class InputBlock(nn.Module):

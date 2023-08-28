@@ -1,15 +1,25 @@
-try:
-    import torchgan
+"""
+Module: models_param.py
+==================
 
-    print(f"Existing TorchGAN {torchgan.__version__} installation found")
-except ImportError:
-    import subprocess
-    import sys
+It instantiates the models of "models_set.py" using defined parameters for training and definition of the networks.
 
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "torchgan"])
-    import torchgan
+Author:
+    Jorge Andrés Hernández Galeano
+    jhernandezga@unal.edu.co
+    https://github.com/jhernandezga
 
-    print(f"Installed TorchGAN {torchgan.__version__}")
+Date:
+    2023-08-26
+
+Description:
+    Networks are usually defined for their generator, discriminator and loss classes. 
+    Here an object is instantiated for each of those components of the network, in order to use them
+    easily and in a fast way in the training module
+
+    Instantiantion of classes is done following the Torchgan Framework
+    https://torchgan.readthedocs.io/en/latest/getting_started/basic_example.html
+"""
     
 # General Imports
 import os
@@ -37,13 +47,15 @@ from torchgan.models import DCGANDiscriminator
 from torchgan.models import AutoEncodingDiscriminator
 
 from torchgan.losses import *
-from models_set import AdversarialAutoencoderDiscriminatorLoss, AdversarialAutoencoderGenerator, AdversarialAutoencoderDiscriminator, AdversarialAutoencoderGeneratorLoss, ConditinalResNetDiscriminator, ConditionalResNetGenerator, DIsoMapLoss, EncoderGeneratorBEGAN, HingeDiscriminatorLoss, HingeGeneratorLoss, LossDLL, LossEntropyDiscriminator, LossEntropyGenerator, MaFLoss, PacResNetDiscriminator, PackedWassersteinDiscriminatorLoss, PackedWassersteinGradientPenalty, PackedWasserteinGeneratorLoss, ResNetDiscriminator, ResNetDiscriminator256, ResNetDiscriminatorMod, ResNetGenerator, ResNetGenerator256, WassersteinGradientPenaltyMod, WasserteinAutoencoderDiscriminatorLoss, WasserteinAutoencoderGeneratorLoss, WasserteinL1AutoencoderGeneratorLoss, WassersteinDivergence
+from models_set import *
 
 
 
 
 ######################################  DCGAN   #######################################
 
+
+# DCGAN Network for 256x256 images
 dcgan_network = {
     "generator": {
         "name": DCGANGenerator,
@@ -73,8 +85,7 @@ dcgan_network = {
 }
 
 
-#"step_channels": 64
-
+#DCGAN Network for 512x512 images
 dcgan_network_2x = {
     "generator": {
         "name": DCGANGenerator,
@@ -103,7 +114,7 @@ dcgan_network_2x = {
     },
 }
 
-
+#DCGAN Network for 512x512 images using 64 step channels
 dcgan_network_2x_2 = {
     "generator": {
         "name": DCGANGenerator,
@@ -133,6 +144,7 @@ dcgan_network_2x_2 = {
 }
 
 
+# ResNet network 256x256 images
 resnet_network = {
     "generator": {
         "name": ResNetGenerator,
@@ -157,6 +169,7 @@ resnet_network = {
 }
 
 
+#ResNet Network for 256x256 images using leaky ReLU
 resnet_network_l = {
     "generator": {
         "name": ResNetGenerator,
@@ -183,7 +196,7 @@ resnet_network_l = {
 }
 
 
-
+#ResNet Network modified learning rate parameters
 resnet_network_2 = {
     "generator": {
         "name": ResNetGenerator,
@@ -208,6 +221,7 @@ resnet_network_2 = {
 }
 
 
+# ResNet network 256x256 images with packed discriminator ->PACGAN
 resnet_network_pack = {
     "generator": {
         "name": ResNetGenerator,
@@ -233,6 +247,7 @@ resnet_network_pack = {
 }
 
 
+#ResNet Network for 512X512 images
 resnet_network_2x = {
     "generator": {
         "name": ResNetGenerator,
@@ -257,6 +272,7 @@ resnet_network_2x = {
 }
 
 
+#ResNet Network 256x256 images with spectral normalization
 resnet_network_sn = {
     "generator": {
         "name": ResNetGenerator,
@@ -282,6 +298,8 @@ resnet_network_sn = {
 }
 
 
+
+#Network combination of ResNet Generator and DCGAN discriminator
 hybrid_network = {
     "generator": {
         "name": ResNetGenerator,
@@ -309,6 +327,7 @@ hybrid_network = {
 }
 
 
+# Modified ResNet network to include DLLE and DisoMap
 mod_wsgp_network = {
     "generator": {
         "name": ResNetGenerator,
@@ -336,7 +355,7 @@ mod_wsgp_network = {
     },
 }
 
-
+#Another Resnet implementation for testing purposes
 resnet_256 = {
     "generator": {
         "name": ResNetGenerator256,
@@ -355,6 +374,7 @@ resnet_256 = {
 }
 
 
+# Conditional ResNet 256x256
 c_resnet = {
     "generator": {
         "name": ConditionalResNetGenerator,
@@ -424,6 +444,8 @@ wsgp_mod_losses = [
 
 ###############################      AEE      ##########################################
 
+
+# Adversarial autoencoder network 256x256
 aee_network = {
     "generator": {
         "name": AdversarialAutoencoderGenerator,
@@ -459,6 +481,7 @@ wassL1_losses = [
 
 ############################################################### BEGAN ######################################################################
 
+#BEGAN Network 256x256
 began_network = {
     "generator": {
         "name": EncoderGeneratorBEGAN,
