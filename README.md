@@ -19,7 +19,9 @@ This will install all the necessary packages for the project
 </code>
 </pre>
 
-Use <code> training.py </code> to train a model defining the parameters of the script
+Use <code> training.py </code> to train a model defining the parameters of the script. For now, training has been mostly tested on images of 256x256 pixels
+
+
 
 To visualize training variables at real-time during training using Tensorboard: 
 1. Install Tensorboard for pytorch <code>pip install tensorboardX</code>
